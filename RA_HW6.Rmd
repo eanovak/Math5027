@@ -1,0 +1,164 @@
+---
+title: "RA_HW6"
+output: pdf_document
+---
+
+### Scientists wished to compare growth rates of two different types of bacteria. The growth was recorded at five equally spaced times for bacteria types A and B. The data will be in a data frame called bacteria after executing the following commands in R:
+```{r}
+GROWTH = c(8.0, 9.0, 9.1, 10.2, 10.4, 10.0, 10.3, 12.2, 12.6, 13.9)
+TIME = rep(-2:2, 2)
+TYPE = factor(rep(c("A", "B"), each = 5))
+bacteria = data.frame(TIME, GROWTH, TYPE)
+```
+
+### a. Construct a scatterplot of the data for the two types of bacteria using GROWTH as the response variable and TIME as the predictor variable. Distinguish between the observations from each group using different symbols and colors. Comment on what you see.
+```{r}
+library(ggplot2)
+gg_bacteria <- ggplot(bacteria,
+                    mapping = aes(x = TIME, y = GROWTH,
+                                  color = TYPE, shape = TYPE)) #+ 
+                     # geom_smooth(method='lm', ) # to add lm and CI band
+gg_bacteria + geom_point()
+
+```
+Type B has a larger y-intercept than type A which suggests that type B bacteria might be larger than type A at the beginning of the experiment. The growth per time unit is positive for both types of bacteria; however, it appears to be larger for type B than Type A which suggests that Type B bacteria experiences faster growth than Type A.
+
+### b. Fit a one-way model for GROWTH using TYPE. What is the estimated mean growth for each group? 
+```{r}
+# explore one-way data
+# mean(bacteria$GROWTH[TYPE =='A'])
+# mean(bacteria$GROWTH[TYPE =='B'])
+# boxplot of one-way data
+# boxplot(GROWTH~TYPE, col= rainbow(2), main = 'one-way model for GROWTH using TYPE')
+
+# let R do it for us
+# fit one-way model
+lmod = lm(GROWTH ~ TYPE, data = bacteria)
+summary(lmod) # only shows mean for one type (A) because of how r does factors
+
+# do it by hand
+# use tapply to find mean of each group
+#tapply(bacteria$GROWTH, bacteria$TYPE, mean) 
+
+#A = with(bacteria, (TYPE == levels(TYPE) [1]) + 0)
+#B = with(bacteria, (TYPE == levels(TYPE) [2]) + 0)
+#head(data.frame(TYPE = bacteria$TYPE, A, B))
+
+#lm(GROWTH ~ B, data = bacteria)
+```
+The estimated mean growth of type A bacteria is 9.34 units per time unit. \newline
+The estimated mean growth of type B bacteria is 11.80 units per time unit. \newline
+The one-way model for GROWTH using TYPE is $E(GROWTH|GROUP) = \beta_0 + \beta_2T_B$ so we have $E(GROWTH|GROUP) = 9.34 + 2.46T_B$. Note that T is for type and $T_B$ is type B.
+
+### c. Interpret all coefficients from b. in the context of the problem.
+$\hat{\beta_0} = \hat{E}(GROWTH|TYPE = A) = 9.34$ is the sample mean of the growth of the bacteria for type A.\newline
+$\hat{\beta_2} = 2.46$ is the difference between the sample mean of the growth for type A and type B bacteria.
+
+### d. Fit a main-effects model to GROWTH using TIME and TYPE. What is the estimated mean growth for each group?
+```{r}
+lmodME = lm(GROWTH ~ TIME + TYPE, bacteria)
+coef(lmodME)
+```
+The estimated mean growth of type A bacteria is 9.34 units per time unit. \newline
+The estimated mean growth of type B bacteria is 11.80 units per time unit. \newline
+The main-effects model to GROWTH using TIME and TYPE is \newline
+$\hat{E}(GROWTH|GROUP) = \beta_0 + \beta_2TIME + \beta_3T_B$ \newline
+so we have \newline
+$\hat{E}(GROWTH|TIME + TYPE) = 9.34 + 0.805\cdot TIME + 2.46T_B$.
+
+### e. Interpret all coefficients from d. in the context of the problem.
+$\hat{\beta_0} = \hat{E}(GROWTH|TYPE = A) = 9.34$ is the sample mean of the growth of the bacteria for type A.\newline
+$\hat{\beta_2} = 0.805$, so the growth of bacteria is estimated to increase by 0.805 units per $1\%$ increase in time. \newline
+$\hat{\beta_3} = 2.46$, so type B bacteria is estimated to grow 2.46 units per time faster than type A bacteria with an identical time. \newline 
+
+### f. Fit an interaction model to GROWTH using TIME and TYPE. What is the estimated mean growth for each group?
+```{r}
+lmodI = lm(GROWTH ~ TYPE*TIME, data = bacteria)
+coef(lmodI)
+```
+The estimated mean growth of type A bacteria is 9.34 units per time unit. \newline
+The estimated mean growth of type B bacteria is 11.80 units per time unit. \newline
+The main-effects model to GROWTH using TIME and TYPE is \newline
+$E(GROWTH|GROUP) = \beta_0 + \beta_2T_B+ \beta_3TIME + \beta_4\cdot TIME\cdot T_B$ \newline
+so we have \newline
+$\hat{E}(GROWTH|TIME + TYPE) = 9.34 +  2.46T_B + 0.60TIME +0.41\cdot TIME\cdot T_B$.
+
+### g. Interpret all coefficients from f. in the context of the problem.
+$\hat{\beta_0} = \hat{E}(GROWTH|TYPE = A) = 9.34$, so the estimated growth of the bacteria for type A at $-2$ time units is 9.34 units per time unit.\newline
+$\hat{\beta_2} = 2.46$, so the average growth for type B bacteria is estimated to be about 2.46 units per time unit higher than type A bacteria when both are at $-2$ time units. \newline
+$\hat{\beta_3} = 0.60$, so the estimated increase in growth of type A bacteria when the time unit increases by $1\%$ is about 0.60 units per time unit. \newline
+$\hat{\beta_4} = 0.41$, so the growth for type B bacteria will increase 0.41 units per unit time per unit increase in time faster than type A bacteria. 
+
+
+### h. Compute the fitted line for the two types for the one-way, main effects, and interaction models (this will result in six lines). Plot these fitted lines in three separate plots of the scatterplot in a. i.e., plot the two fitted lines for each type for the one-way model in one plot, then the two fitted lines for each type for the main-effect model in a second plot, etc.
+```{r}
+# ONE-WAY MODEL
+# using ggplot2
+mean_growth = tapply(bacteria$GROWTH, bacteria$TYPE, mean) # compute mean lifeExpF for each group
+# create data frame with means for each group
+mean_df = data.frame(TYPE = names(mean_growth), mean = mean_growth)
+
+p1 = ggplot(bacteria, aes(x = TIME, y = GROWTH, col = TYPE)) + geom_point() + geom_hline(aes(yintercept = mean, col = TYPE), mean_df) + theme_bw() + theme(legend.position="top") +  ggtitle("One-way Plot")
+
+# MAIN EFFECTS MODEL
+lmodm = lm(GROWTH ~ TIME + TYPE, bacteria)
+predx = unlist(tapply(bacteria$TIME, bacteria$TYPE, function(x) seq(min(x), max(x), len = 2)))
+
+# associated group for each x-value
+g = rep(c("A", "B"), each = 2)
+# predit response for each combination of x, group
+predy = predict(lmodm, newdata = data.frame(TIME = predx, TYPE = g))
+# combine together
+fitted_df = data.frame(TIME = predx, TYPE = g, GROWTH = predy)
+# plot main effects/ancova model using ggplot2
+p2 = ggplot(bacteria, aes(x = TIME, y = GROWTH, col = TYPE)) + geom_point() + geom_line(data = fitted_df, aes(x = TIME, y = GROWTH)) + theme_bw()  + theme(legend.position="top") + ggtitle("Main Effects Plot")
+
+
+# INTERACTION PLOT
+lmodi = lm(GROWTH ~ TIME*TYPE, data = bacteria)
+coef(lmodi) # coefficients
+
+# plot separate lines/interaction model
+# using ggplot2
+p3 = ggplot(bacteria, aes(x = TIME, y = GROWTH, col = TYPE)) + geom_point() + geom_smooth(method = "lm", level = 0) + theme_bw() + theme(legend.position="top") + ggtitle("Interaction Plot")
+
+# COMBINE
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+multiplot(p1, p2, p3, cols=2)
+```
+

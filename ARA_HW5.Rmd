@@ -1,0 +1,44 @@
+---
+title: "ARA_HW5"
+output: pdf_document
+---
+
+### Using the UN11data set in the alr4package: 
+### 1.Fit a simple linear regression of $y=log(fertility)$ on $x=pctUrban$.
+```{r}
+# install.packages("alr4") # install one time only
+library(alr4)
+data(UN11)
+
+
+# fit a simple linear model of log(fertility)~pctUrban
+lm1 = lm(log(fertility) ~ pctUrban, data = UN11)
+```
+
+#### a.Provide the equation for the fitted model.
+The equation for the fitted model is $\hat{E}(log(fertility)|pctUrban) = 1.5 - 0.01\cdot pctUrban$
+
+#### b.Interpret the estimated coefficient for pctUrban in a straightforward sentence in the context of the problem.
+The estimated coefficient for the percent of population living in urban areas is about $-0.01$. This means that a 1% increase in the percent of urban population is associated with a change in the mean number of children per woman by a multiplicative decrease of $exp(\beta_1) = e^{-0.01} = 0.9900498$. In other words, when the percent of urban population increases by 1%, then the mean number of children per woman will decrease by about 1%.
+
+### 2.Fit the regression of $y=log(fertility)$ on $x_1 = log(ppgdp)$ and $x_2 = lifeExpF$.
+```{r}
+lm2 = lm(log(fertility) ~ log(ppgdp) + lifeExpF, data = UN11)
+summary(lm2)
+coef(lm2)
+
+# to help visualize data 
+par(mfrow=c(1,2))
+plot(log(fertility) ~ log(ppgdp), data = UN11)
+plot(log(fertility) ~ lifeExpF, data = UN11)
+```
+
+#### a.What is the equation for the fitted model?
+$\hat{E}(log(fertility)|log(ppgdp), lifeExpF) = 3.50736 - 0.06544\cdot log(ppgdp) - 0.02824 \cdot lifeExpF$ 
+
+#### b.If we increase ppgdp by 25%, what is the expected decrease in fertility? (You will need to do some computing).
+Since the response and regressor are in logarithmic scale we use the equation $c^{\beta_j} = 1.25^(-0.06544) = 0.09855$. Therefore, the expected decrease in the expected number of children per woman is $1-0.09855 = 0.014496 = 1.45 \%$.
+
+#### c.Using your computation from part b (i.e., for a 25% increase in ppgdp), interpret the estimated coefficient for ppgdp in a straight forward sentence in the context of the problem.
+If the per capita gross domestic product in US dollars increases by 25% and the other regressors stay the same, then we expect the number of children per woman to decrease by 1.45%.
+

@@ -1,0 +1,177 @@
+---
+title: "Regression HW 4"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+### 2.1
+Fit a regression model with the expenditure on gambling as the response and the sex, status, income, and verbal score and predictors. Present the output.
+```{r}
+install.packages("faraway", repos = "http://cran.us.r-project.org") # install one time only 
+
+library(faraway)
+data(teengamb) # loads teengamb into global environment]
+
+# fit a regression model 
+rmod <- lm(gamble ~ sex + status + income + verbal, data=teengamb)
+summary(rmod)  # look at the multiple r-squared
+sumary(rmod)
+
+#determine whether R^2 is a meaningful description of model fit based on a plot of y vs \hat{y}
+# Plot the residuals versus fitted values.
+plot(residuals(rmod) ~ fitted(rmod))
+abline(0, 0, lty = 2)
+
+# How much response variation does the model explain?
+plot(rmod$model$gamble ~ fitted(rmod), xlab = "yhat", ylab = "y")
+summary(rmod)$r.squared
+```
+#### 2.1a What percentage of variation in the response is explained by these predictors?
+52.67% of variation in the response is explained by these predictors. I first plotted the residuals against the fitted data. The residuals are pretty close to the fitted data around 0 to 20, but then increase. $R^2 = 0.5267234$ which is near the middle of the range of $R^2$ which suggests that a useful prediction can be made but isn't particularly likely to occur. Looking at the plot of y vs $\hat{y}$, we see that when $\hat{y}$ increases past 20, the model does not do a particularly good job of estimating the true values. I don't think $R^2$ is a useful predictor in this example.
+
+```{r}
+# find the residuals
+rmod$residuals
+```
+#### 2.1b Which observation has the largest (positive) residual? Give the case number.
+The largest (positive) residual is case number 24 which has a residual of 94.2522174.
+
+```{r}
+mean(rmod$residuals)
+median(rmod$residuals)
+```
+#### 2.1c Compute the mean and median of the residuals. 
+The mean of the residuals is $-3.065293\cdot 10^{-17}$ and the median of the residuals is $-1.451392$.
+
+```{r}
+# fancy r way of doing it
+zapsmall(cor(fitted(rmod), resid(rmod)))
+
+# how I can do it by hand
+real = rmod$model$gamble - rmod$residuals
+cor(rmod$residuals, real)
+```
+#### 2.1d Compute the correlation of the residuals with the fitted values.
+The correlation of the residuals with the fitted values is $-1.070659 \cdot 10^{-16}$.
+
+```{r}
+# correlation of the residuals with the income
+income = teengamb$income
+cor(rmod$residuals, income)
+```
+#### 2.1e Compute the correlation of the residuals with the income.
+The correlation of the residuals with the income is $-7.242382\cdot 10^{-17}$.
+
+```{r}
+rmod$coefficients['sex']
+```
+#### 2.1f For all other predictors held constant, what would be the difference in predicted expenditure on gambling for a male compared to a female?
+Recall from the last time that we worked with this dataset, that $male = 0$ and $female = 1$. The difference in predicted gambling for a male compared to a female is \$$-22.12$ which means that in this dataset males gambled \$$22.12$ more than females. 
+
+
+### 2.3
+In this question, we investigate the relative merits of methods for computing the coefficients. Generate some artificial data by:
+```{r}
+x = 1:20
+y = x+rnorm(20)
+
+# find \hat{\beta} using lm
+lm(y ~ x + I(x^2))
+
+# now use the direct calculation in the textbook
+#  1. create our matrix X
+X = cbind(1, x, x^2)
+# 2. solve using the equation given in the text
+calc <- solve(t(X) %*% X) %*% t(X) %*% y
+
+# print both side-by-side to compare
+print(cbind(coef(lm(y ~ x + I(x^2))), calc))
+
+```
+Fit a polynomial in x for predicting y. Compute $\hat{\beta}$ in two ways — by lm() and by using the direct calculation described in the chapter ($\hat{\beta}= (X^{T}X)^{-1}X^{T}y$). At what degree of polynomial does the direct calculation method fail? (Note the need for the I() function in fitting the polynomial, that is, lm(y ~ x + I(x^2)). \\
+
+We find $\hat{\beta} = 0.352179834$ using either method.\\
+This direct calculation method can be used up to degree 6 polynomials. Any higher (7+ degree polynomials) and R gives an error stating "Error in solve.default(t(X) %*% X) : system is computationally singular: reciprocal condition number = 1.00846e-18". I found this out using trial-and-error methods.
+
+```{r}
+# fit a model with lpsa as the response and lcavol as the predictor
+rmod1 = lm(lpsa ~ lcavol , data = prostate)
+sumary(rmod1)
+
+rmod2 = lm(lpsa ~ lcavol + lweight , data = prostate)
+sumary(rmod2)
+
+rmod3 = lm(lpsa ~ lcavol + lweight + svi , data = prostate)
+sumary(rmod3)
+
+rmod4 = lm(lpsa ~ lcavol + lweight + svi + lbph , data = prostate)
+sumary(rmod4)
+
+rmod5 = lm(lpsa ~ lcavol + lweight + svi + lbph + age , data = prostate)
+sumary(rmod5)
+
+rmod6 = lm(lpsa ~ lcavol + lweight + svi + lbph + age + lcp, data = prostate)
+sumary(rmod6)
+
+rmod7 = lm(lpsa ~ lcavol + lweight + svi + lbph + age + lcp + pgg45, data = prostate)
+sumary(rmod7)
+
+rmod8 = lm(lpsa ~ lcavol + lweight + svi + lbph + age + lcp + pgg45 + gleason, data = prostate)
+sumary(rmod8)
+
+# create (by hand) a vector of the RSE values and R^2 values
+RSEvec = c(0.78750, 0.75065, 0.71681, 0.71082, 0.70731, 0.71021, 0.70475, 0.70842)
+R2vec = c(0.54, 0.59, 0.63, 0.64, 0.64, 0.65, 0.65, 0.65)
+
+#plot the trend in these two statistics
+plot(RSEvec, R2vec, ylab = "Coefficient of Determination (R^2)", xlab = "Residual SE")
+```
+### 2.4 
+The dataset prostate comes from a study on 97 men with prostate cancer who were due to receive a radical prostatectomy. Fit a model with lpsa as the response and lcavol as the predictor. Record the residual standard error and the R2. Now add lweight, svi, lbph, age, lcp, pgg45 and gleason to the model one at a time. For each model record the residual standard error and the R2. Plot the trends in these two statistics.
+
+For the model with lpsa as the response and lcavol as the predictor, the residual standard error is $0.7875$ and $R^2 = 0.54$. \\
+With lweight added, $RSE = 0.75065$ and $R^2 = 0.59$. \\
+With svi added, $RSE = 0.71681$ and $R^2 = 0.63$. \\
+With lbph added, $RSE = 0.71082$ and $R^2 = 0.64$. \\
+With age added, $RSE = 0.70731$ and $R^2 = 0.64$. \\
+With lcp added, $RSE = 0.71021$ and $R^2 = 0.65$. \\
+With pgg45 added, $RSE = 0.70475$ and $R^2 = 0.65$. \\
+With gleason added, $RSE = 0.70842$ and $R^2 = 0.65$. \\
+
+The plot of $R^2$ against the residual SE appears to have a negative linear trend. In other words, larger $R^2$s have smaller residual SEs and smaller $R^2$s have larger residual SEs. This makes sense because $R^2$ gives the percentage of variance explained and a high percentage means that the residual should be small and vice versa.
+
+### 2.6 a-c
+Thirty samples of cheddar cheese were analyzed for their content of acetic acid, hydrogen sulfide and lactic acid. Each sample was tasted and scored by a panel of judges and the average taste score produced. Use the cheddar data to answer the following:
+
+```{r}
+rmod = lm(taste ~ Acetic + H2S + Lactic , data = cheddar)
+sumary(rmod)
+```
+#### 2.6a Fit a regression model with taste as the response and the three chemical contents as predictors. Report the values of the regression coefficients.
+The values of the regression coefficients are $0.32774$ for Acetic (acetic acid), $3.91184$ for H2S (hydrogen sulfide), and $19.67054$ for Lactic (lactic acid). 
+
+```{r}
+#extract the fitted values 
+fitted = rmod$fitted.values
+response = cheddar$taste
+correlation = cor(fitted, response)
+correlation^2
+```
+#### 2.6b Compute the correlation between the fitted values and the response. Square it. Identify where this value appears in the regression output.
+This value is $0.6517747$ (rounded is $0.65$) which happens to be $R^2$.
+
+```{r}
+# now force the data to have an intercept at 0 by centering the data at the mean
+rmod = lm(taste ~ Acetic + H2S + Lactic +0, data = cheddar)
+sumary(rmod)
+
+# compute a more reasonable goodness of fit for this example
+fitted = rmod$fitted.values
+response = cheddar$taste
+correlation = cor(fitted, response)
+correlation^2
+```
+#### 2.6c Fit the same regression model but without an intercept term. What is the value of R2 reported in the output? Compute a more reasonable measure of the goodness of fit for this example.
+Without an intercept term, $R^2 = 0.89$ which is higher than the $R^2$ of the original data. I computed the correlation between the fitted values and the response (as in part c) and then squared it. This value is $0.6244075$ which is a more reasonable measure of the goodness of fit for this example.
+
+

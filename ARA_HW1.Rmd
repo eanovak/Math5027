@@ -1,0 +1,119 @@
+---
+title: "Applied Regression Analysis HW 1"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+### Exercise 1.1 (modified): The teengamb dataset in the faraway package concerns a study of teenage gambling in Britain. 
+```{r}
+install.packages("faraway", repos = "http://cran.us.r-project.org") # install one time only 
+
+library(faraway)
+data(teengamb) # loads teengamb into global environment
+summary(teengamb) # gives summary of file 
+```
+
+### Make a numerical and graphical summary of the data, commenting on what you notice. Specifically:
+### 1. Clean the data. (Show your work).
+```{r}
+# we want to convert the sex variable into categorical data and then relabel them
+# converting test varible to factor, look at summary
+teengamb$sex <- factor(teengamb$sex)
+summary(teengamb$sex)
+
+# provide more descriptive levels (0 = male, 1 = female)
+levels(teengamb$sex) <- c("Male","Female")
+summary(teengamb) # check to make sure it worked
+```
+### 2. Calculate and provide numerical summaries for all variables. Comment on the numerical summary for each variable.
+```{r}
+# create numerical summaries for all the variables 
+summary(teengamb$sex)
+summary(teengamb$status) # Socioeconomic status score based on parents' occupation
+summary(teengamb$income) # in pounds per week
+summary(teengamb$verbal) # verbal score in words out of 12 correctly defined
+summary(teengamb$gamble) # expenditure on gambling in pounds per year
+```
+Highlights of the numerical summary for each variable:
+\begin{itemize}
+  \item There are 28 males and 19 females in the study.
+  \item The average socioeconomic status is 45.23 and the median is 43.00.
+  \item The average income in pounds per week is 4.642 and the median is 3.250.
+  \item The average verbal score is 6.66 and the median is 7.00. This is just above a 50\% verbal score.
+  \item The average expenditure on gambling in pounds per year is 19.3 while the median is only 6.0. I would recommend creating a boxplot from the data to see the spread.
+\end{itemize}
+
+### 3. Construct and provide at least one univariate graphic for each variable. Comment on any interesting features of each plot.
+```{r}
+plot(teengamb$sex) # plot categorical data (shows the amount of females and males)
+hist(teengamb$status, breaks = 10, main = "Socioeconomic status score based on parents' occupation", xlab = "Score") #histogram
+plot(density(teengamb$income, na.rm = TRUE), main = "Density plot of Income") # density plot of the income
+plot(density(teengamb$verbal, na.rm  =TRUE), main = "Density plot of Verbal Score")
+plot(density(teengamb$gamble, na.rm  =TRUE), main = "Density plot of the expenditure of gambling")
+
+```
+\begin{itemize}
+  \item More male teenagers than female teenagers were in the study.
+  \item The histogram of the socioeconomic status score based on the parents' occupation shows that the socioeconomic status of the teenagers is widely spread.
+  \item The income of the teenagers is skewed right, but appears somewhat normally distributed.
+  \item The verbal score is skewed slightly left.
+  \item The expenditure on gamblins is skewed right. 
+\end{itemize}
+
+### 4. Construct bivariate graphics for each combination of variables (10 plots). Comment on any relationships you notice.
+```{r}
+# parallel boxplots of status, income, verbal, and gamble vs sex (male or female)
+plot(status ~ sex, data = teengamb) 
+plot(income ~ sex, data = teengamb)  # no significant relationship
+plot(verbal ~ sex, data = teengamb)
+plot(gamble ~ sex, data = teengamb)
+
+plot(status ~ income, data = teengamb) # no significant relationship
+plot(status ~ verbal, data = teengamb)
+plot(status ~ gamble, data = teengamb) # no significant relationship
+plot(income ~ verbal, data = teengamb) # no significant relationship
+plot(income ~ gamble, data = teengamb)
+plot(verbal ~ gamble, data = teengamb) # no significant relationship
+
+```
+\begin{itemize}
+  \item A significantly higher median socioeconomic status is found in males than females.
+  \item The median verbal score in females is lower than in males; however, the sexes have a similar IQR.
+  \item The spread of expenditure on gambling for females is much smaller than the spread of the data for males. Further statistical analysis should be done to determine whether males gamble more than females.
+  \item A higher verbal score might be loosly associated with a higher socioeconomic status, but further statistical analysis should be done.
+  \item A very low income might be associated with a small expenditure on gambling.
+\end{itemize}
+
+### 5. Construct and provide densities of all quantitative variables split by sex. Comment on the similarities or differences in the distribution of each variable for the males and females.
+```{r}
+# not using ggplot2
+male <- density(teengamb$status[teengamb$sex == "Male"])
+female <- density(teengamb$status[teengamb$sex == "Female"])
+plot(male, col = "blue", main = "Socioeconomic Status", ylim = c(0, 0.035))
+lines(female, col = "orange")
+legend("topright", legend = c("Male", "Female"),
+       col = c("blue", "orange"), lty = 1, lwd = 1)
+
+# create ggplot objects with necessary information about variables
+install.packages("ggplot2", repos = "http://cran.us.r-project.org") # do one time
+library(ggplot2)
+ggteengamb = ggplot(teengamb)
+
+# now try to create a density plot for income vs sex
+ggteengamb + geom_density(aes(x = income, color = sex))
+
+# now try to create a density plot for verbal vs sex
+ggteengamb + geom_density(aes(x = verbal, color = sex))
+
+# now try to create a density plot for gamble vs sex
+ggteengamb + geom_density(aes(x = gamble, color = sex))
+
+
+
+```
+\begin{itemize}
+  \item The socioeconomic status of the males is skewed to the left while the status of the females is more centered around the median. The status of the males is generally higher than that of the females.
+  \item There is a larger amount of females with a low income (below 5) than males. 
+  \item The distribution of the verbal scores is about the same for males and females.
+  \item Females are less likely to gamble than males according to this data. Very few teenagers gamble large quantities.
+\end{itemize}

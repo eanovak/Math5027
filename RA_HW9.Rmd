@@ -1,0 +1,69 @@
+---
+title: "R Notebook"
+output: pdf_document
+---
+### Required: Exercises 6.2 c, d, e, f. 
+### For 6.2, why is there a structural problem? 
+In the plot of Pearson residuals vs fitted values for sex we see that the residuals are either 0 (female) or 1 (male) because sex has not been converted to a categorical variable. This causes a structural problem. To fix it sex needs to be converted into a categorical variable.
+```{r}
+library(faraway)
+library(car)
+
+lmod = lm(gamble ~ ., data = teengamb)
+
+h <- hatvalues(lmod)
+# half-normal plot of leverages
+halfnorm(h, nlab = 4, ylab = "leverage")
+
+# index plot of leverage values
+infIndexPlot(lmod, vars = "hat") # labels the top 2 leverage values
+
+# determine structural problem
+residualPlots(lmod, terms = ~ sex)
+is.factor(teengamb$sex)
+```
+### 6.2 c. Check for large leverage points
+According to the half-normal plot of the leverages indices 33, 31, 35, and 42 appear to be leverage values because their hat-values are larger than the others and because they are on the "handle" of the "hockey stick".
+
+```{r}
+# perform outler check using Bonferroni correction
+outlierTest(lmod)
+
+infIndexPlot(lmod, vars = c("Studentized", "Bonf"))
+
+```
+### 6.2 d. Check for outliers
+I performed an outlier check using the Bonferroni correction test. According to the test, index 24 is an outlier. The diagnostic plots supports that because 24 is significantly above and below the other points.
+
+```{r}
+cook <- cooks.distance(lmod)
+halfnorm(cook, n = 3, ylab = "Cook's distances")
+
+infIndexPlot(lmod, var = "Cook", id = list(n = 3))
+plot(lmod, which = 4)
+
+# index plot of dfbetas
+dfbetasPlots(lmod, id.n = 3)
+
+# influence plot of model
+influencePlot(lmod)
+plot(lmod, which = 5)
+```
+### 6.2 e. Check for influential points
+On the residuals vs leverage plot we see that 24 is the only point outside Cook's distance, 24 has the largest influence "bubble" on the influence plot, and 24 does not coincide with the trend on the halfnorm plot. Consequently, 24 is likely to be an influential point.
+
+```{r}
+d <- residuals(lmod)
+plot(d)
+abline(1,0)
+
+plot(lmod)
+qqPlot(lmod)
+
+# index plots of studentized residuals and Bonferroni p-values
+infIndexPlot(lmod, vars = c("Studentized", "Bonf"))
+
+residualPlots(lmod, terms = ~ sex)
+```
+### 6.2 f. Check the structure of the relationship between the predictors and the response.
+There are several points with residuals outside the confidence bounds in the qqPlot. As noted before, in the plot of Pearson residuals vs fitted values for sex we see that the residuals are either 0 (female) or 1 (male) because sex has not been converted to a categorical variable. This causes a structural problem. To fix it, sex needs to be converted into a categorical variable. The smooth line of residuals vs fitted values is not a straight line, so there is a structural error.

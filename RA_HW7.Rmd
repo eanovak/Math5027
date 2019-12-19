@@ -1,0 +1,78 @@
+---
+title: "Homework 7"
+output: pdf_document
+---
+### LMWR2: 7.3 
+```{r}
+library(faraway)
+data(divusa)
+
+lmod = lm(divorce ~ unemployed + femlab + marriage + birth + military, divusa)
+sumary(lmod)
+
+# compute the condition numbers and interpret the data 
+# identifying problem predictors
+# same diagnostic with variance decomposition proportions
+# If a large condition index is associated 
+# two or more variables with large variance 
+# decomposition proportions, these variables may
+# be causing collinearity problems. 
+# Belsley et al suggest that a large proportion 
+# is 50 percent or more.  
+library(perturb)
+colldiag(lmod)
+```
+### 3a. Interpret the meanings of the condition numbers.
+We are concerned with condition indices that are 30 or greater because they signify a potential problem with collinearity. In this example, row 6 has a condition index of 46.193. All other rows have a condition index below 30. When we scan each column in row 6, we see that unemployed, femlab, and marriage all have a proportion greater than 0.50. That suggests there is a problem with collinearity between those regressors. A next step could be to remove one of those regressors from the linear model and recompute and analyze the condition indices.
+
+```{r}
+# compute the VIFs
+vif(lmod)
+```
+### 3.b For the same model, compute the VIFs. Is there evidence that collinearity causes some predictors not to be significant? Explain.
+From the notes, we know that a VIF more than 5 or 10 indicates a potential problem with collinearity for the specific regressor. The VIF computed here shows all regressors having a VIF below 5, so there are no collinearity problems that this method can predict.
+
+### 7.4
+```{r}
+data(longley)
+lmod = lm(Employed ~., data = longley)
+
+colldiag(lmod)
+```
+### 4a. Compute and comment on the condition numbers.
+Rows 5, 6, and 7 all have condition indices significantly greater than 30 which signifies a problem with collinearity. Looking across row 5, there are not 2+ variables with proportions equal to or greater than 0.50. Although GNP.deflator has a proportion of 0.457, it is a sole variable, so no conclusions about collinearity can be drawn. Looking across row 6, we see that GNP.deflator has a proportion of 0.505 and Population has a proportion of 0.831; consequently, there is a collinearity problem between those regressors. Looking across row 7, we see GNP has a proportion of 0.655, Unemployed has a proportion of 0.689, and Year has a proportion of 1 which signifies a collinearity problem between those two regressors. Taking all of the condition numbers into consideration, the next step might be to refit the linear model without GNP.deflator, Population, GNP, Unemployed, or Year.
+
+```{r}
+round(cor(longley), 3)
+```
+### 4b. Compute and comment on the correlations between predictors.
+We are concerned with correlation values larger than 0.50. We see that GNP and GNP.deflator have a correlation value of 0.992 which means they are highly correlated. Continuing in this fashion, we find that GNP.deflator, GNP, Unemployed, Population, Year, and Employed are all correlated. Unemployed is moderately correlated with the rest and all others are highly correlated with each other. With this information, I would suggest first removing GNP.deflator, GNP, Population, or Year from the model.
+
+    
+```{r}
+vif(lmod)
+```
+### 4c. Compute the VIFS.
+The only VIF below the accepted value (5) is for the Armed.Forces which has a VIF of 3.59. The square root of the VIF for a regressor is how many times larger the standard error is than it would have been without collinearity. For example, the standard error for GNP is $\sqrt{1788.51348} = 42.29$ times larger than it would have been without collinearity. 
+
+```{r}
+# first remove GNP.deflator
+lmod2 = lm(Employed ~ GNP.deflator + Unemployed + Armed.Forces + Population + Year, data = longley)
+colldiag(lmod2)
+
+# now remove Year because it has a condition number of 1
+lmod3 = lm(Employed ~ GNP.deflator + Unemployed + Armed.Forces + Population, data = longley)
+colldiag(lmod3)
+
+# remove population because it has the highest condition number of 0.998
+lmod4 = lm(Employed ~  GNP.deflator + Unemployed + Armed.Forces , data = longley)
+colldiag(lmod4)
+
+# remove GNP.deflator because it has a condition number of 0.996
+lmod9 = lm(Employed ~  Unemployed + Armed.Forces, data = longley)
+colldiag(lmod9)
+
+# now all condition indices are below 30!
+```
+### 4d. Determine a reduced set of variables that corrects the problem with collinearity
+One option for a reduced set of variables is have Employed regressed on Unemployed and Armed.Forces.

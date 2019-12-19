@@ -1,0 +1,126 @@
+---
+title: "R Notebook"
+output: pdf_document
+---
+
+### 10.1 Use the prostate data with lpsa as the response and the other variables as predictors. Implement the following variable selection methods to determine the "best" model.
+```{r}
+library(faraway)
+library(car)
+
+lmod = lm(lpsa ~., data = prostate)
+sumary(lmod)# determine least significant predictor
+# perform backward elimination using update function on previous model
+# use alpha_crit = 0.05
+
+lmod <- update(lmod, . ~ . - gleason) # remove gleason because it has the highest pval
+sumary(lmod)
+
+lmod = update(lmod, .~.-lcp) # remove lcp
+sumary(lmod)
+
+lmod = update(lmod, .~.-pgg45) # remove pgg45
+sumary(lmod)
+
+lmod = update(lmod, .~.-age) # remove age
+sumary(lmod)
+
+lmod = update(lmod, .~.-lbph) # remove lbph
+sumary(lmod)
+
+# compare R^2
+# an eliminated variable may still have a connection with the response
+# depending on the other variables in the model
+lmodf <- lm(lpsa ~ ., data = prostate)
+sumary(lmodf)
+
+lmodr <- lm(lpsa ~ lcavol + lweight + svi, data = prostate)
+sumary(lmodr)
+```
+### 1a. Backward elimination
+I used $\alpha_{crit} = 0.05$ for my p-value criterion and found the "best" model to be lpsa regresssed on lcavol, lweight, and svi. 
+
+```{r}
+lmod = lm(lpsa ~., data = prostate)
+sumary(lmod)# determine least significant predictor
+
+library(leaps)
+# model selection by exhaustive search
+b <- regsubsets(lpsa ~ ., data = prostate)
+rs <- summary(b) # summarize model that minimizes RSS for each p
+rs # best subset models (in terms of RSS)
+
+p = 2:9 # number of coefficients
+length(p)
+# calculate AIC of each model from the BIC
+# subtract p*log(n) and add 2p
+aic = rs$bic + p * (2 - log(50))
+# plot AIC vs p
+plot(aic ~ p, main = "AIC plot")
+```
+### 1b. AIC
+To choose a model using the AIC criterion, we are looking for the model with the lowest AIC value. According to the plot, the "best" model with the lowest AIC value of -84.88 is lpsa regressed on lcavol, lweight, lbph, and svi.
+
+```{r}
+# Construct adjusted R^2 plot
+adjr = rs$adjr
+plot(adjr ~ p, ylab = expression({R^2}[a]))
+subsets(b, statistic = "adjr2", legend = FALSE)
+```
+### 1c. Adjusted R^2
+We favor models with larger $R_a^2$. According to the plot, the model with the largest $R_a^2$ is lpsa regressed on lcavol, lweight, age, lbph, svi, lcp, and pgg45.
+
+```{r}
+# construct Cp plot
+cp = rs$cp
+plot(cp ~ p, ylab = expression(paste(C[p], " statistic")))
+abline(0, 1)
+subsets(b, statistic = "cp", legend = FALSE)
+abline(1, 1) # corresponds to 45 degree line offset by 1 unit vertically
+
+```
+### 1d. Mallows C_p
+To choose the best model using Mallows C_p, we choose the model closest to the line (excluding the model with 8 predictors because Mallows C_p is designed to go through that point). Using that criterion, the best model has the predictors lcavol, lweight, age, lbph, svi, and pgg45.
+
+```{r}
+library(faraway)
+library(car)
+lmod = lm(log(Volume) ~ Height + Volume + Girth*Height + I(Girth^2) + I(Height^2), data = trees)
+sumary(lmod)
+
+# use Backwards elimination to see if removing Height^2 helps
+lmodBackwards = lm(log(Volume) ~ Height + Volume + Girth*Height + I(Girth^2), data = trees)
+sumary(lmodBackwards)
+
+library(leaps)
+# model selection by exhaustive search
+b <- regsubsets(log(Volume) ~ Height + Volume + Girth*Height + I(Girth^2) + I(Height^2), data = trees)
+rs <- summary(b) # summarize model that minimizes RSS for each p
+rs # best subset models (in terms of RSS)
+
+p = 2:7 # number of coefficients
+# calculate AIC of each model from the BIC
+# subtract p*log(n) and add 2p
+aic = rs$bic + p * (2 - log(50))
+# plot AIC vs p
+plot(aic ~ p, main = "AIC plot")
+aic
+
+# construct adjusted R^2 plot
+adjr = rs$adjr
+plot(adjr ~ p, ylab = expression({R^2}[a]))
+subsets(b, statistic = "adjr2", legend = FALSE)
+
+# construct Cp plot
+cp = rs$cp
+plot(cp ~ p, ylab = expression(paste(C[p], " statistic")))
+abline(0, 1)
+subsets(b, statistic = "cp", legend = FALSE)
+abline(1, 1) # corresponds to 45 degree line offset by 1 unit vertically
+
+```
+### 10.4 Using the trees data, fit a model with log(Volume) as the response and a second-order polynomial (including the interaction term) in Girth and Height. Determine whether the model may be reasonably simplified. 
+
+After using Backwards selection using a p-value criterion of $p_{crit} = 0.05$ and going through AIC, $R^2_a$, and Mallows $C_p$ model selection, I believe the model can be reasonably simplified by removing the second-order polynomial for Height.
+
+
